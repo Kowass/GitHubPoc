@@ -11,7 +11,8 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.PathVariable;
-
+import br.com.tcc.github_poc.dto.*;
+import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
@@ -60,5 +61,63 @@ public class GithubController {
 
         List<GithubPullRequestResponse> prs = githubClient.getPullRequests(token, owner, repo);
         return ResponseEntity.ok(prs);
+    }
+
+    @GetMapping("/{owner}/{repo}/issues")
+    public ResponseEntity<List<GithubIssueResponse>> buscarIssues(
+            @RequestHeader("Authorization") String token,
+            @PathVariable String owner,
+            @PathVariable String repo) {
+
+        List<GithubIssueResponse> issues = githubClient.getIssues(token, owner, repo);
+        return ResponseEntity.ok(issues);
+    }
+
+    @GetMapping("/{owner}/{repo}/prs/{pullNumber}/reviews")
+    public ResponseEntity<List<GithubReviewResponse>> buscarReviewsDePr(
+            @RequestHeader("Authorization") String token,
+            @PathVariable String owner,
+            @PathVariable String repo,
+            @PathVariable int pullNumber) {
+
+        List<GithubReviewResponse> reviews = githubClient.getPullRequestReviews(token, owner, repo, pullNumber);
+        return ResponseEntity.ok(reviews);
+    }
+
+    @GetMapping("/{owner}/{repo}/commits/stats")
+    public ResponseEntity<GraphQLCommitStatsResponse> buscarEstatisticasCommits(
+            @RequestHeader("Authorization") String token,
+            @PathVariable String owner,
+            @PathVariable String repo) {
+
+        String query = String.format("""
+            query {
+              repository(owner: "%s", name: "%s") {
+                defaultBranchRef {
+                  target {
+                    ... on Commit {
+                      history(first: 50) {
+                        nodes {
+                          oid
+                          messageHeadline
+                          additions
+                          deletions
+                          author {
+                            date
+                            user { login }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            """, owner, repo);
+
+        GraphQLRequest request = new GraphQLRequest(query);
+        GraphQLCommitStatsResponse response = githubClient.executeGraphQL(token, request);
+
+        return ResponseEntity.ok(response);
     }
 }
