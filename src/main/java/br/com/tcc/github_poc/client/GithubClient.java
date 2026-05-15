@@ -8,6 +8,8 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.PathVariable;
+import br.com.tcc.github_poc.dto.*;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -38,5 +40,26 @@ public interface GithubClient {
             @RequestHeader("Authorization") String token,
             @PathVariable("owner") String owner,
             @PathVariable("repo") String repo
+    );
+
+    @GetMapping("/repos/{owner}/{repo}/issues?state=all")
+    List<GithubIssueResponse> getIssues(
+            @RequestHeader("Authorization") String token,
+            @PathVariable("owner") String owner,
+            @PathVariable("repo") String repo
+    );
+
+    @GetMapping("/repos/{owner}/{repo}/pulls/{pullNumber}/reviews")
+    List<GithubReviewResponse> getPullRequestReviews(
+            @RequestHeader("Authorization") String token,
+            @PathVariable("owner") String owner,
+            @PathVariable("repo") String repo,
+            @PathVariable("pullNumber") int pullNumber
+    );
+
+    @PostMapping(value = "/graphql", consumes = "application/json")
+    GraphQLCommitStatsResponse executeGraphQL(
+            @RequestHeader("Authorization") String token,
+            @RequestBody GraphQLRequest request
     );
 }
