@@ -8,6 +8,8 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 import java.util.Optional;
 
+
+
 public interface RepositoryContributorRepository extends JpaRepository<RepositoryContributor, Long> {
 
     @Query("SELECT c FROM RepositoryContributor c")
