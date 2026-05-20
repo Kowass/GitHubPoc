@@ -1,61 +1,204 @@
-# PoC - Integração GitHub API (TCC)
+# TCC Dashboard — GitHub Metrics API
+
+Dashboard stateful de métricas de produtividade individual e de equipe baseado em dados do GitHub, com persistência em Supabase/PostgreSQL e documentação interativa via OpenAPI/Swagger.
 
 ## Sobre o Projeto
-Esta é uma Prova de Conceito (PoC) desenvolvida para a validação técnica inicial do Trabalho de Conclusão de Curso (TCC). O objetivo principal é validar a integração com a API REST do GitHub e testar a extração de métricas de produtividade de programadores, como commits, pull requests e contribuidores de um repositório.
 
-Para agilizar os testes e focar apenas na validação dos dados que integrarão o dashboard oficial, este projeto foi construído de forma *stateless* (sem persistência em base de dados), funcionando como um proxy repassador de requisições.
+Este é um backend Spring Boot 4.0.5 que:
+- **Ingere dados** do GitHub via API REST + GraphQL (Feign + RestClient)
+- **Persiste** em Supabase/PostgreSQL com otimizações de batch e N+1 queries
+- **Fornece 5 endpoints de métricas** calculadas sobre dados históricos (Cycle Time, Lead Time, TCM, etc.)
+- **Expõe documentação interativa** via Swagger UI (OpenAPI 3.0)
 
-## Tecnologias Utilizadas
-* **Java 21**
-* **Spring Boot** (Spring Web)
-* **Spring Cloud OpenFeign** (Cliente HTTP declarativo)
-* **Maven**
+O frontend **não consome a GitHub API em runtime** — todas as métricas são calculadas sobre dados persistidos, garantindo performance e auditoria.
+
+## Stack Técnico
+
+| Componente | Tecnologia |
+|---|---|
+| **Linguagem** | Java 21 |
+| **Framework** | Spring Boot 4.0.5 |
+| **HTTP Client** | Spring Cloud OpenFeign (REST) + GraphQL manual |
+| **HTTP Paginado** | Spring RestClient |
+| **Persistência** | Spring Data JPA + PostgreSQL (Supabase) |
+| **Utilitários** | Lombok, Jackson |
+| **Documentação** | Springdoc OpenAPI 2.8.8 |
 
 ## Estrutura do Projeto
-O projeto segue boas práticas de arquitetura em camadas e princípios SOLID:
-* `client`: Interfaces Feign para comunicação externa com a API do GitHub, abstraindo a complexidade do HTTP.
-* `controller`: Endpoints REST que recebem as chamadas locais e repassam para a camada de cliente.
-* `dto`: Objetos de Transferência de Dados (utilizando `Records` do Java) para mapear, filtrar e extrair apenas os dados relevantes dos payloads extensos retornados pelo GitHub.
 
-## Como Executar e Testar
+```
+br.com.tcc.github_poc
+├── client/              # GithubClient (Feign): REST + GraphQL contra api.github.com
+├── controller/          # GithubController (PoC original)
+├── etl/                 # Motor de seeding assíncrono
+│   ├── SeedController
+│   ├── SeedOrchestrator (@Async)
+│   ├── SeedJobState
+│   ├── ingestion/       # 6 ingestion services (Commit, PR, Issue, Review, etc.)
+│   ├── extraction/      # PaginatedRestFetcher + GraphQLCommitFetcher
+│   ├── mapper/          # DtoToEntityMapper
+│   └── ratelimit/       # RateLimitGuard
+├── metrics/             # 5 endpoints de métricas + cálculos
+│   ├── MetricsController
+│   ├── service/         # OverviewMetricsService, FlowMetricsService, etc.
+│   ├── dto/             # Response DTOs
+│   └── support/         # ConventionalCommitClassifier
+├── entities/            # JPA entities (User, Commit, PR, Issue, Review, etc.)
+├── repositories/        # Spring Data JPA repositories
+├── dto/                 # DTOs de cliente/ingestão
+├── config/              # Configuração (OpenAPI, etc.)
+└── client/              # Feign clients
+```
+
+## Como Executar
 
 ### 1. Requisitos
-* Java 21 instalado no sistema.
-* Uma IDE (como IntelliJ IDEA ou Eclipse).
-* Um [Personal Access Token (PAT)](https://github.com/settings/tokens) do GitHub (Classic ou Fine-grained) com permissões de leitura de repositórios (`repo` ou `public_repo`).
-* Postman (ou cliente HTTP similar) para a realização das requisições.
 
-### 2. Rodar a Aplicação
-Abra o projeto na sua IDE e execute a classe principal `GithubPocApplication.java` (certifique-se de que a anotação `@EnableFeignClients` está presente). A aplicação iniciará o servidor Tomcat embutido na porta `8080`.
+- **Java 21** instalado
+- **Maven 3.8+**
+- **PostgreSQL/Supabase** com acesso via `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`
+- **Token do GitHub** (Classic ou Fine-grained) com `repo` ou `public_repo`
 
-### 3. Autenticação nas Requisições
-A API do GitHub exige autenticação. Todas as requisições feitas ao seu `localhost` devem incluir o cabeçalho de autorização contendo o seu token do GitHub. No Postman, configure a aba **Headers**:
-* **Key:** `Authorization`
-* **Value:** `Bearer SEU_TOKEN_AQUI`
+### 2. Configuração de Ambiente
+
+Criar `.env` na raiz do projeto:
+
+```properties
+DB_URL=jdbc:postgresql://<host>:<port>/<database>
+DB_USERNAME=<username>
+DB_PASSWORD=<password>
+SEED_REPOS=axios/axios,owner/repo2
+SEED_SINCE=2025-05-19
+```
+
+### 3. Rodar a Aplicação
+
+```bash
+./mvnw spring-boot:run
+```
+
+A aplicação iniciará em `http://localhost:8080`.
 
 ## Endpoints Disponíveis
 
-A API base local está acessível em: `http://localhost:8080/api/poc/github`
+### 📊 Swagger UI (Documentação Interativa)
 
-### 1. Listar Repositórios do Utilizador Autenticado
-* **Método:** `GET`
-* **Rota:** `/repositorios`
-* **Descrição:** Retorna a lista de repositórios aos quais o dono do token tem acesso. Extrai informações como o ID, nome, URL, quantidade de *stars* e os dados do proprietário (*owner*).
+**URL:** `http://localhost:8080/swagger-ui.html`
 
-### 2. Listar Histórico de Commits
-* **Método:** `GET`
-* **Rota:** `/{owner}/{repo}/commits`
-* **Descrição:** Retorna o histórico de commits de um repositório específico. O JSON de resposta resolve o aninhamento de dados para trazer detalhes diretos do autor (nome, email, data) e a mensagem de cada commit.
+Toda a API está auto-documentada com:
+- Descrição de cada endpoint
+- Parâmetros com exemplos
+- Modelos de resposta
+- Botão "Try it out" para testar
 
-### 3. Listar Contribuidores do Projeto
-* **Método:** `GET`
-* **Rota:** `/{owner}/{repo}/contribuidores`
-* **Descrição:** Retorna os programadores que contribuíram para o repositório. Inclui o `login`, link do avatar e a **quantidade total de contribuições** (commits) de cada um, sendo crucial para a análise de participação relativa.
+### 🔌 Endpoints de Métricas
 
-### 4. Listar Pull Requests (Todas)
-* **Método:** `GET`
-* **Rota:** `/{owner}/{repo}/prs`
-* **Descrição:** Retorna todas as Pull Requests do repositório, incluindo as abertas, fechadas e mergeadas. Detalha o estado atual, o criador, a data de criação e a data de *merge* (se aplicável), permitindo a análise do fluxo de revisão de código.
+**Base:** `/api/poc/metrics`
+
+Todos requerem `authorLogin` (obrigatório) e opcionalmente `from` / `to` (ISO-8601 dates).
+
+| Endpoint | Descrição |
+|---|---|
+| `GET /overview` | Volume de commits/PRs, taxa de aceitação e série diária |
+| `GET /flow` | Cycle Time, Lead Time, TCM, Time in Review, dias ativos |
+| `GET /repos` | Participação relativa por repositório |
+| `GET /collaboration` | Distribuição de revisões, comparativo individual vs equipe |
+| `GET /insights` | Classificação Conventional Commits (feat/fix/other) |
+
+**Exemplo:**
+```bash
+curl "http://localhost:8080/api/poc/metrics/overview?repoId=23088740&authorLogin=DigitalBrainJS&from=2025-05-19&to=2026-05-19"
+```
+
+### 🌱 Endpoints de ETL
+
+**Base:** `/api/poc/etl`
+
+| Endpoint | Método | Descrição |
+|---|---|---|
+| `/seed` | `POST` | Iniciar carga massiva de dados (header: `Authorization: Bearer <token>`) |
+| `/status` | `GET` | Status do job de seed |
+
+**Exemplo:**
+```bash
+curl -X POST http://localhost:8080/api/poc/etl/seed \
+  -H "Authorization: Bearer ghp_xxxxxxxxxx"
+
+curl http://localhost:8080/api/poc/etl/status
+```
+
+## Testando a API
+
+### Via Swagger UI
+
+1. Abrir `http://localhost:8080/swagger-ui.html`
+2. Clicar em qualquer endpoint
+3. Clicar em "Try it out"
+4. Preencher parâmetros
+5. Clicar "Execute"
+
+### Via cURL
+
+```bash
+# Obter métricas de overview
+curl "http://localhost:8080/api/poc/metrics/overview?repoId=23088740&authorLogin=DigitalBrainJS"
+
+# Iniciar seed
+curl -X POST http://localhost:8080/api/poc/etl/seed \
+  -H "Authorization: Bearer ghp_xxxxx"
+
+# Status do seed
+curl http://localhost:8080/api/poc/etl/status
+```
+
+### Via Postman
+
+1. Importar `http://localhost:8080/api-docs` (OpenAPI JSON)
+2. Usar as coleções geradas automaticamente
+3. Configurar variáveis de ambiente (`repoId`, `authorLogin`, etc.)
+
+## Repositório de Teste
+
+| Campo | Valor |
+|---|---|
+| **Repo** | `axios/axios` |
+| **repoId** | `23088740` |
+| **Usuário de teste** | `DigitalBrainJS` |
+| **Período padrão** | `from=2025-05-19&to=2026-05-19` |
+
+## Referência de Métricas
+
+Veja [`metricas-TCC.md`](metricas-TCC.md) para especificação completa de:
+- Definição de cada métrica (Cycle Time, Lead Time, TCM, etc.)
+- Fórmulas de cálculo
+- Visualizações esperadas no dashboard
+- Edge cases e tratamento de dados vazios
+
+## Arquitetura de Dados
+
+### ETL (Motor de Seeding)
+
+1. **Extração:** GraphQL para commits (cursor-paginated + `since` nativo), REST paginado para PRs/Issues/Reviews
+2. **Rate Limit:** `RateLimitGuard` pausa automaticamente quando `X-RateLimit-Remaining < threshold`
+3. **Persistência:** Batch pre-check (`findAllById`) + `Persistable<ID>` para evitar N+1 queries
+4. **Idempotência:** Re-runs seguras — entidades duplicadas não são re-inseridas
+
+### Cálculo de Métricas
+
+- **Projeções SQL:** Aggregations nativas (AVG, MIN, MAX, COUNT) via `@Query` e Spring Data projections
+- **Série temporal:** Preenchimento de gaps em Java (zero-fill), não em SQL
+- **Período:** Defaults a 1 ano atrás / hoje se não especificado
+
+## Decisões Arquiteturais
+
+- ✓ **Persistência stateful:** Todos os dados em Supabase para auditoria e performance
+- ✓ **BatchPreCheck:** 1 SELECT em lote + N INSERTs diretos vs N SELECTs + N INSERTs
+- ✓ **GraphQL para Commits:** Mais eficiente que REST, retorna `additions`/`deletions` nativamente
+- ✓ **Spring Data Projections:** Aggregations SQL reduzem transferência de dados
+- ✓ **OpenAPI/Swagger:** Documentação auto-sincronizada com código (sem divergência)
 
 ---
-*Projeto elaborado para a validação da estrutura de dados da integração base do TCC.*
+
+**Desenvolvido por:** Felipe Sousa ([lipesousa136@gmail.com](mailto:lipesousa136@gmail.com))
+
+**Última atualização:** 2026-05-20
