@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -63,4 +64,34 @@ public interface IssueRepository extends JpaRepository<Issue, Long> {
            ORDER BY i.createdAt DESC
            """)
     List<Issue> searchIssuesByTitle(@Param("title") String title);
+
+    // --- Lead Time (média de horas entre criação e fechamento) ---
+
+    @Query(value = """
+           SELECT AVG(EXTRACT(EPOCH FROM (closed_at - created_at)) / 3600.0)
+           FROM issues
+           WHERE repo_id = :repoId
+           AND state = 'closed'
+           AND closed_at BETWEEN :from AND :to
+           """, nativeQuery = true)
+    Double avgLeadTimeHoursByRepoPeriod(
+            @Param("repoId") Long repoId,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to
+    );
+
+    @Query(value = """
+           SELECT AVG(EXTRACT(EPOCH FROM (closed_at - created_at)) / 3600.0)
+           FROM issues
+           WHERE repo_id = :repoId
+           AND author_login = :login
+           AND state = 'closed'
+           AND closed_at BETWEEN :from AND :to
+           """, nativeQuery = true)
+    Double avgLeadTimeHoursByRepoAuthorPeriod(
+            @Param("repoId") Long repoId,
+            @Param("login") String login,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to
+    );
 }

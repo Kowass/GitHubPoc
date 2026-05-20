@@ -36,4 +36,15 @@ public interface GithubRepositoryRepository extends JpaRepository<GithubReposito
            ORDER BY r.stargazersCount DESC
            """)
     List<GithubRepository> findRepositoriesOrderByStarsDesc();
+
+    @Query("""
+           SELECT DISTINCT c.repository FROM Commit c
+           WHERE c.authorLogin = :login
+           AND c.commitDate BETWEEN :from AND :to
+           """)
+    List<GithubRepository> findReposByAuthorLoginAndPeriod(
+            @Param("login") String login,
+            @Param("from") java.time.LocalDateTime from,
+            @Param("to") java.time.LocalDateTime to
+    );
 }
