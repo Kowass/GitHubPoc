@@ -72,6 +72,7 @@ public interface IssueRepository extends JpaRepository<Issue, Long> {
            FROM issues
            WHERE repo_id = :repoId
            AND state = 'closed'
+           AND created_at >= :from
            AND closed_at BETWEEN :from AND :to
            """, nativeQuery = true)
     Double avgLeadTimeHoursByRepoPeriod(
@@ -86,6 +87,7 @@ public interface IssueRepository extends JpaRepository<Issue, Long> {
            WHERE repo_id = :repoId
            AND author_login = :login
            AND state = 'closed'
+           AND created_at >= :from
            AND closed_at BETWEEN :from AND :to
            """, nativeQuery = true)
     Double avgLeadTimeHoursByRepoAuthorPeriod(

@@ -14,5 +14,5 @@ public record CollaborationMetricsResponse(
 
     public record ComparisonMetrics(TeamMetrics individual, TeamMetrics teamAverage) {}
 
-    public record TeamMetrics(Long commits, Long prsMerged, Double tcm) {}
+    public record TeamMetrics(Double commits, Double prsMerged, Double tcm) {}
 }

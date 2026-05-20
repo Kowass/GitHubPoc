@@ -1,8 +1,8 @@
 package br.com.tcc.github_poc.metrics.dto.common;
 
-import java.sql.Date;
+import java.time.LocalDate;
 
 public interface DailyDurationProjection {
-    Date getDay();
+    LocalDate getDay();
     Double getAvgHours();
 }

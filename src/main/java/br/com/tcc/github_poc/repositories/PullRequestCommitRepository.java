@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 public interface PullRequestCommitRepository extends JpaRepository<PullRequestCommit, PullRequestCommitId> {
 
     @Query(value = """
-           SELECT AVG(EXTRACT(EPOCH FROM (p.merged_at - c_min.min_date)) / 3600.0)
+           SELECT AVG(EXTRACT(EPOCH FROM (p.merged_at - GREATEST(c_min.min_date, p.created_at))) / 3600.0)
            FROM pull_requests p
            JOIN (
                SELECT prc.pr_id, MIN(c.commit_date) AS min_date
@@ -32,7 +32,7 @@ public interface PullRequestCommitRepository extends JpaRepository<PullRequestCo
     );
 
     @Query(value = """
-           SELECT AVG(EXTRACT(EPOCH FROM (p.merged_at - c_min.min_date)) / 3600.0)
+           SELECT AVG(EXTRACT(EPOCH FROM (p.merged_at - GREATEST(c_min.min_date, p.created_at))) / 3600.0)
            FROM pull_requests p
            JOIN (
                SELECT prc.pr_id, MIN(c.commit_date) AS min_date

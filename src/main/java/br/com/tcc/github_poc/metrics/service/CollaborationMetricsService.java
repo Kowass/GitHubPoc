@@ -52,7 +52,7 @@ public class CollaborationMetricsService {
         long teamMerged    = prRepo.countMergedByRepoPeriod(repoId, fromDt, toDt);
         Double teamTcm     = tcm(commitRepo.sumTotalChangesByRepoPeriod(repoId, fromDt, toDt),
                                   commitRepo.countByRepoPeriod(repoId, fromDt, toDt));
-        long totalContribs = Math.max(activeContributors, 1);
+        double totalContribs = Math.max(activeContributors, 1);
         TeamMetrics teamAvg = new TeamMetrics(
                 teamCommits / totalContribs,
                 teamMerged  / totalContribs,
@@ -64,7 +64,7 @@ public class CollaborationMetricsService {
                 activeContributors,
                 reviewDist,
                 new ComparisonMetrics(
-                        new TeamMetrics(userCommits, userMerged, userTcm),
+                        new TeamMetrics((double) userCommits, (double) userMerged, userTcm),
                         teamAvg
                 )
         );

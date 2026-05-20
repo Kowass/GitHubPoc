@@ -76,7 +76,7 @@ public class FlowMetricsService {
             List<DailyDurationProjection> projections, LocalDate start, LocalDate end) {
         var map = projections.stream()
                 .collect(java.util.stream.Collectors.toMap(
-                        p -> p.getDay().toLocalDate(),
+                        DailyDurationProjection::getDay,
                         DailyDurationProjection::getAvgHours
                 ));
         List<DailyDurationPoint> result = new ArrayList<>();

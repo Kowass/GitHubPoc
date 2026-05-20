@@ -87,7 +87,7 @@ public class OverviewMetricsService {
     private Map<LocalDate, Long> toMap(List<DailyCountProjection> projections) {
         return projections.stream()
                 .collect(Collectors.toMap(
-                        p -> p.getDay().toLocalDate(),
+                        DailyCountProjection::getDay,
                         DailyCountProjection::getCnt
                 ));
     }
