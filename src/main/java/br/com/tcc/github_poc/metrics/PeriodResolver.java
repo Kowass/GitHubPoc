@@ -17,6 +17,12 @@ public class PeriodResolver {
         return (to != null ? to : LocalDate.now()).atTime(23, 59, 59);
     }
 
+    public void validate(LocalDate from, LocalDate to) {
+        if (resolveFrom(from).isAfter(resolveTo(to))) {
+            throw new IllegalArgumentException("'from' date must not be after 'to' date");
+        }
+    }
+
     public PeriodDto toDto(LocalDate from, LocalDate to) {
         return new PeriodDto(
                 from != null ? from : LocalDate.now().minusYears(1),
