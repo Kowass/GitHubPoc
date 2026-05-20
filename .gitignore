@@ -35,3 +35,11 @@ build/
 .env
 *.env
 !.env.example
+
+### Claude / local context files ###
+.claude/
+spring-petclinic/
+claude.md
+contexto.md
+metricas-TCC.md
+handoff-poc-github-tcc.md
