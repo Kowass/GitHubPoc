@@ -229,6 +229,4 @@ Veja [`metricas-TCC.md`](metricas-TCC.md) para especificação completa de:
 
 ---
 
-**Desenvolvido por:** Felipe Sousa ([lipesousa136@gmail.com](mailto:lipesousa136@gmail.com))
-
-**Última atualização:** 2026-05-20
+**Desenvolvido por:** Felipe de Sousa Alves, Matheus de Oliveira Bezerra & Enzo Girão.
