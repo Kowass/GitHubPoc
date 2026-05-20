@@ -1,3 +1,10 @@
 package br.com.tcc.github_poc.dto;
 
-public record GraphQLRequest(String query) {}
+import java.util.Map;
+
+public record GraphQLRequest(String query, Map<String, Object> variables) {
+
+    public GraphQLRequest(String query) {
+        this(query, Map.of());
+    }
+}

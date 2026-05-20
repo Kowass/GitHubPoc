@@ -5,28 +5,30 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.data.domain.Persistable;
 
+import java.time.LocalDateTime;
+
 @Data
 @EqualsAndHashCode(of = "id")
 @Entity
-@Table(name = "repository_contributors", schema = "public")
-public class RepositoryContributor implements Persistable<Long> {
+@Table(name = "reviews", schema = "public")
+public class Review implements Persistable<Long> {
 
     @Id
     @Column(name = "id")
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "repo_id", nullable = false)
-    private GithubRepository repository;
+    @JoinColumn(name = "pull_request_id", nullable = false)
+    private PullRequest pullRequest;
 
-    @Column(name = "login", nullable = false)
-    private String login;
+    @Column(name = "author_login")
+    private String authorLogin;
 
-    @Column(name = "avatar_url")
-    private String avatarUrl;
+    @Column(name = "state", nullable = false)
+    private String state;
 
-    @Column(name = "contributions")
-    private Integer contributions = 0;
+    @Column(name = "submitted_at")
+    private LocalDateTime submittedAt;
 
     @Transient
     private boolean newRecord = true;

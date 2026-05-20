@@ -6,13 +6,8 @@ import br.com.tcc.github_poc.dto.GithubCommitResponse;
 import br.com.tcc.github_poc.dto.GithubContributorResponse;
 import br.com.tcc.github_poc.dto.GithubPullRequestResponse;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.PathVariable;
-import br.com.tcc.github_poc.dto.*;
 import org.springframework.web.bind.annotation.*;
+import br.com.tcc.github_poc.dto.*;
 import java.util.List;
 
 @RestController
@@ -39,7 +34,7 @@ public class GithubController {
             @PathVariable String owner,
             @PathVariable String repo) {
 
-        List<GithubCommitResponse> commits = githubClient.getCommits(token, owner, repo);
+        List<GithubCommitResponse> commits = githubClient.getCommits(token, owner, repo, null, 1, 100);
         return ResponseEntity.ok(commits);
     }
 
@@ -49,7 +44,7 @@ public class GithubController {
             @PathVariable String owner,
             @PathVariable String repo) {
 
-        List<GithubContributorResponse> contribuidores = githubClient.getContributors(token, owner, repo);
+        List<GithubContributorResponse> contribuidores = githubClient.getContributors(token, owner, repo, 1, 100);
         return ResponseEntity.ok(contribuidores);
     }
 
@@ -59,7 +54,7 @@ public class GithubController {
             @PathVariable String owner,
             @PathVariable String repo) {
 
-        List<GithubPullRequestResponse> prs = githubClient.getPullRequests(token, owner, repo);
+        List<GithubPullRequestResponse> prs = githubClient.getPullRequests(token, owner, repo, "all", "created", "desc", 1, 100);
         return ResponseEntity.ok(prs);
     }
 
@@ -69,7 +64,7 @@ public class GithubController {
             @PathVariable String owner,
             @PathVariable String repo) {
 
-        List<GithubIssueResponse> issues = githubClient.getIssues(token, owner, repo);
+        List<GithubIssueResponse> issues = githubClient.getIssues(token, owner, repo, "all", null, 1, 100);
         return ResponseEntity.ok(issues);
     }
 
@@ -80,7 +75,7 @@ public class GithubController {
             @PathVariable String repo,
             @PathVariable int pullNumber) {
 
-        List<GithubReviewResponse> reviews = githubClient.getPullRequestReviews(token, owner, repo, pullNumber);
+        List<GithubReviewResponse> reviews = githubClient.getPullRequestReviews(token, owner, repo, pullNumber, 1, 100);
         return ResponseEntity.ok(reviews);
     }
 

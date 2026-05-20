@@ -2,13 +2,18 @@ package br.com.tcc.github_poc.entities;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import org.hibernate.annotations.Generated;
+import org.hibernate.generator.EventType;
+import org.springframework.data.domain.Persistable;
 
 import java.time.LocalDateTime;
 
 @Data
+@EqualsAndHashCode(of = "sha")
 @Entity
 @Table(name = "commits", schema = "public")
-public class Commit {
+public class Commit implements Persistable<String> {
 
     @Id
     @Column(name = "sha", nullable = false)
@@ -42,15 +47,20 @@ public class Commit {
     @Column(name = "deletions")
     private Integer deletions = 0;
 
-    @Column(name = "total_changes")
-    private Integer totalChanges = 0;
+    @Generated(event = {EventType.INSERT, EventType.UPDATE})
+    @Column(name = "total_changes", insertable = false, updatable = false)
+    private Integer totalChanges;
 
-    @PrePersist
-    @PreUpdate
-    public void calculateTotalChanges() {
-        int safeAdditions = additions == null ? 0 : additions;
-        int safeDeletions = deletions == null ? 0 : deletions;
-        this.totalChanges = safeAdditions + safeDeletions;
-    }
+    @Transient
+    private boolean newRecord = true;
 
+    @Override
+    public String getId() { return sha; }
+
+    @Override
+    public boolean isNew() { return newRecord; }
+
+    @PostLoad
+    @PostPersist
+    void markNotNew() { this.newRecord = false; }
 }

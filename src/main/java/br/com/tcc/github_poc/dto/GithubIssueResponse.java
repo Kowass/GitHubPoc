@@ -10,8 +10,10 @@ public record GithubIssueResponse(
         String state,
         @JsonProperty("created_at") String createdAt,
         @JsonProperty("closed_at") String closedAt,
+        OwnerInfo user,
         List<LabelInfo> labels,
-        List<OwnerInfo> assignees
-) {}
-
-record LabelInfo(String name) {}
+        List<OwnerInfo> assignees,
+        @JsonProperty("pull_request") Object pullRequest
+) {
+    public record LabelInfo(String name, String color, String description) {}
+}

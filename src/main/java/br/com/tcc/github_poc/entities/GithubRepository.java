@@ -3,7 +3,6 @@ package br.com.tcc.github_poc.entities;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
-import org.springframework.data.repository.aot.generate.RepositoryContributor;
 
 import java.util.ArrayList;
 import java.util.List;

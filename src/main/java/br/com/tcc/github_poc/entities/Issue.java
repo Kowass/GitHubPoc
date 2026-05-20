@@ -3,15 +3,20 @@ package br.com.tcc.github_poc.entities;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+import org.springframework.data.domain.Persistable;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Data
+@EqualsAndHashCode(of = "id")
+@ToString(exclude = {"assignees", "labels"})
 @Entity
 @Table(name = "issues", schema = "public")
-public class Issue {
+public class Issue implements Persistable<Long> {
 
     @Id
     @Column(name = "id")
@@ -24,7 +29,7 @@ public class Issue {
     @Column(name = "number", nullable = false)
     private Integer number;
 
-    @Column(name = "title", nullable = false)
+    @Column(name = "title", nullable = false, columnDefinition = "text")
     private String title;
 
     @Column(name = "state", nullable = false)
@@ -49,4 +54,14 @@ public class Issue {
     @JsonIgnore
     @OneToMany(mappedBy = "issue", fetch = FetchType.LAZY)
     private List<IssueLabel> labels = new ArrayList<>();
+
+    @Transient
+    private boolean newRecord = true;
+
+    @Override
+    public boolean isNew() { return newRecord; }
+
+    @PostLoad
+    @PostPersist
+    void markNotNew() { this.newRecord = false; }
 }

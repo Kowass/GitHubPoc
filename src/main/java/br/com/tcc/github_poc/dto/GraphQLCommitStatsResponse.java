@@ -7,7 +7,9 @@ public record GraphQLCommitStatsResponse(Data data) {
     public record Repository(DefaultBranchRef defaultBranchRef) {}
     public record DefaultBranchRef(Target target) {}
     public record Target(History history) {}
-    public record History(List<Node> nodes) {}
+    public record History(PageInfo pageInfo, List<Node> nodes) {}
+
+    public record PageInfo(boolean hasNextPage, String endCursor) {}
 
     public record Node(
             String oid,

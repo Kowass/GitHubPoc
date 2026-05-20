@@ -6,30 +6,29 @@ import lombok.EqualsAndHashCode;
 import org.springframework.data.domain.Persistable;
 
 @Data
-@EqualsAndHashCode(of = "id")
+@EqualsAndHashCode(of = "login")
 @Entity
-@Table(name = "repository_contributors", schema = "public")
-public class RepositoryContributor implements Persistable<Long> {
+@Table(name = "github_users", schema = "public")
+public class GithubUser implements Persistable<String> {
 
     @Id
-    @Column(name = "id")
-    private Long id;
-
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "repo_id", nullable = false)
-    private GithubRepository repository;
-
     @Column(name = "login", nullable = false)
     private String login;
+
+    @Column(name = "github_id")
+    private Long githubId;
 
     @Column(name = "avatar_url")
     private String avatarUrl;
 
-    @Column(name = "contributions")
-    private Integer contributions = 0;
+    @Column(name = "html_url")
+    private String htmlUrl;
 
     @Transient
     private boolean newRecord = true;
+
+    @Override
+    public String getId() { return login; }
 
     @Override
     public boolean isNew() { return newRecord; }
