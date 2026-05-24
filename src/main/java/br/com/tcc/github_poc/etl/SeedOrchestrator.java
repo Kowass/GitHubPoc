@@ -35,8 +35,20 @@ public class SeedOrchestrator {
 
     @Async
     public void start(String token) {
-        List<String> repos = List.of(reposConfig.split(","));
+        start(token, null);
+    }
+
+    @Async
+    public void start(String token, List<String> reposOverride) {
+        List<String> repos = resolveRepos(reposOverride);
         String since = resolveSince();
+
+        if (repos.isEmpty()) {
+            log.warn("ETL seed iniciado sem repos para processar (override vazio e config vazia).");
+            jobState.start("");
+            jobState.markDone();
+            return;
+        }
 
         log.info("Iniciando ETL seed. Repos: {}. Since: {}", repos, since);
         jobState.start(repos.get(0));
@@ -74,6 +86,19 @@ public class SeedOrchestrator {
         issueIngestion.ingest(token, owner, repo, since + "T00:00:00Z", repository);
         reviewIngestion.ingest(token, owner, repo, repository.getId());
         pullRequestCommitIngestion.ingest(token, owner, repo, repository.getId());
+    }
+
+    private List<String> resolveRepos(List<String> override) {
+        if (override != null && !override.isEmpty()) {
+            return override.stream()
+                    .filter(r -> r != null && !r.isBlank())
+                    .map(String::trim)
+                    .toList();
+        }
+        return java.util.Arrays.stream(reposConfig.split(","))
+                .filter(r -> r != null && !r.isBlank())
+                .map(String::trim)
+                .toList();
     }
 
     private String resolveSince() {
