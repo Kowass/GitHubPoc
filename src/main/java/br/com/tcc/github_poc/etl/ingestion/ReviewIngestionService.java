@@ -8,6 +8,7 @@ import br.com.tcc.github_poc.etl.SeedJobState;
 import br.com.tcc.github_poc.etl.mapper.DtoToEntityMapper;
 import br.com.tcc.github_poc.repositories.PullRequestRepository;
 import br.com.tcc.github_poc.repositories.ReviewRepository;
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -46,9 +47,15 @@ public class ReviewIngestionService {
         for (PullRequest pr : prs) {
             int page = 1;
             while (true) {
-                List<GithubReviewResponse> reviews = githubClient.getPullRequestReviews(
-                        token, owner, repo, pr.getNumber(), page, 100
-                );
+                List<GithubReviewResponse> reviews;
+                try {
+                    reviews = githubClient.getPullRequestReviews(
+                            token, owner, repo, pr.getNumber(), page, 100
+                    );
+                } catch (FeignException.NotFound e) {
+                    log.warn("PR #{} não encontrada na GitHub API (pode ter sido deletada). Pulando reviews.", pr.getNumber());
+                    break;
+                }
                 if (reviews == null || reviews.isEmpty()) break;
 
                 for (GithubReviewResponse dto : reviews) {
