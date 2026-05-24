@@ -135,14 +135,27 @@ curl "http://localhost:8080/api/poc/metrics/overview?repoId=23088740&authorLogin
 
 | Endpoint | Método | Descrição |
 |---|---|---|
-| `/seed` | `POST` | Iniciar carga massiva de dados (header: `Authorization: Bearer <token>`) |
+| `/seed` | `POST` | Iniciar carga massiva de dados (header: `Authorization: Bearer <token>`). Body opcional `{ "repos": [...] }` sobrescreve `etl.seed.repos` |
 | `/status` | `GET` | Status do job de seed |
 
-**Exemplo:**
+**Exemplos:**
+
+Sem body — usa `etl.seed.repos` do config:
 ```bash
 curl -X POST http://localhost:8080/api/poc/etl/seed \
   -H "Authorization: Bearer ghp_xxxxxxxxxx"
+```
 
+Com body — sobrescreve os repos para este request:
+```bash
+curl -X POST http://localhost:8080/api/poc/etl/seed \
+  -H "Authorization: Bearer ghp_xxxxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{"repos": ["axios/axios", "owner/repo2"]}'
+```
+
+Status do job:
+```bash
 curl http://localhost:8080/api/poc/etl/status
 ```
 
