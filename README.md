@@ -68,9 +68,13 @@ Criar `.env` na raiz do projeto:
 DB_URL=jdbc:postgresql://<host>:<port>/<database>
 DB_USERNAME=<username>
 DB_PASSWORD=<password>
+GITHUB_CLIENT_ID=your_github_oauth_client_id
+GITHUB_CLIENT_SECRET=your_github_oauth_client_secret
 SEED_REPOS=axios/axios,owner/repo2
 SEED_SINCE=2025-05-19
 ```
+
+> `GITHUB_CLIENT_ID` e `GITHUB_CLIENT_SECRET` são obrigatórios para o fluxo OAuth do frontend. Crie um OAuth App em https://github.com/settings/developers com callback `http://localhost:8080/auth-callback`.
 
 ### 3. Rodar a Aplicação
 
@@ -78,13 +82,13 @@ SEED_SINCE=2025-05-19
 ./mvnw spring-boot:run
 ```
 
-A aplicação iniciará em `http://localhost:8080`.
+A aplicação iniciará em `http://localhost:8081`.
 
 ## Endpoints Disponíveis
 
 ### 📊 Swagger UI (Documentação Interativa)
 
-**URL:** `http://localhost:8080/swagger-ui.html`
+**URL:** `http://localhost:8081/swagger-ui.html`
 
 Toda a API está auto-documentada com:
 - Descrição de cada endpoint
@@ -115,7 +119,7 @@ Todos requerem `authorLogin` (obrigatório, `@NotBlank`) e opcionalmente `from` 
 
 **Exemplo:**
 ```bash
-curl "http://localhost:8080/api/poc/metrics/overview?repoId=23088740&authorLogin=DigitalBrainJS&from=2025-05-19&to=2026-05-19"
+curl "http://localhost:8081/api/poc/metrics/overview?repoId=23088740&authorLogin=DigitalBrainJS&from=2025-05-19&to=2026-05-19"
 ```
 
 **Resposta de erro (exemplo):**
@@ -142,13 +146,13 @@ curl "http://localhost:8080/api/poc/metrics/overview?repoId=23088740&authorLogin
 
 Sem body — usa `etl.seed.repos` do config:
 ```bash
-curl -X POST http://localhost:8080/api/poc/etl/seed \
+curl -X POST http://localhost:8081/api/poc/etl/seed \
   -H "Authorization: Bearer ghp_xxxxxxxxxx"
 ```
 
 Com body — sobrescreve os repos para este request:
 ```bash
-curl -X POST http://localhost:8080/api/poc/etl/seed \
+curl -X POST http://localhost:8081/api/poc/etl/seed \
   -H "Authorization: Bearer ghp_xxxxxxxxxx" \
   -H "Content-Type: application/json" \
   -d '{"repos": ["axios/axios", "owner/repo2"]}'
@@ -156,14 +160,14 @@ curl -X POST http://localhost:8080/api/poc/etl/seed \
 
 Status do job:
 ```bash
-curl http://localhost:8080/api/poc/etl/status
+curl http://localhost:8081/api/poc/etl/status
 ```
 
 ## Testando a API
 
 ### Via Swagger UI
 
-1. Abrir `http://localhost:8080/swagger-ui.html`
+1. Abrir `http://localhost:8081/swagger-ui.html`
 2. Clicar em qualquer endpoint
 3. Clicar em "Try it out"
 4. Preencher parâmetros
@@ -173,28 +177,28 @@ curl http://localhost:8080/api/poc/etl/status
 
 ```bash
 # Obter métricas de overview (sucesso)
-curl "http://localhost:8080/api/poc/metrics/overview?repoId=23088740&authorLogin=DigitalBrainJS"
+curl "http://localhost:8081/api/poc/metrics/overview?repoId=23088740&authorLogin=DigitalBrainJS"
 
 # Erro: authorLogin vazio (400)
-curl "http://localhost:8080/api/poc/metrics/overview?repoId=23088740&authorLogin="
+curl "http://localhost:8081/api/poc/metrics/overview?repoId=23088740&authorLogin="
 
 # Erro: repoId não existe (404)
-curl "http://localhost:8080/api/poc/metrics/overview?repoId=999999999&authorLogin=DigitalBrainJS"
+curl "http://localhost:8081/api/poc/metrics/overview?repoId=999999999&authorLogin=DigitalBrainJS"
 
 # Erro: from > to (400)
-curl "http://localhost:8080/api/poc/metrics/overview?repoId=23088740&authorLogin=DigitalBrainJS&from=2026-01-01&to=2025-01-01"
+curl "http://localhost:8081/api/poc/metrics/overview?repoId=23088740&authorLogin=DigitalBrainJS&from=2026-01-01&to=2025-01-01"
 
 # Iniciar seed
-curl -X POST http://localhost:8080/api/poc/etl/seed \
+curl -X POST http://localhost:8081/api/poc/etl/seed \
   -H "Authorization: Bearer ghp_xxxxx"
 
 # Status do seed
-curl http://localhost:8080/api/poc/etl/status
+curl http://localhost:8081/api/poc/etl/status
 ```
 
 ### Via Postman
 
-1. Importar `http://localhost:8080/api-docs` (OpenAPI JSON)
+1. Importar `http://localhost:8081/api-docs` (OpenAPI JSON)
 2. Usar as coleções geradas automaticamente
 3. Configurar variáveis de ambiente (`repoId`, `authorLogin`, etc.)
 
