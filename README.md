@@ -109,7 +109,7 @@ Todos requerem `authorLogin` (obrigatório, `@NotBlank`) e opcionalmente `from` 
 | `GET /flow` | Cycle Time, Lead Time, TCM, Time in Review, dias ativos | `repoId` obrigatório e positivo |
 | `GET /repos` | Participação relativa por repositório | Sem `repoId` |
 | `GET /collaboration` | Distribuição de revisões, comparativo individual vs equipe | `repoId` obrigatório e positivo |
-| `GET /insights` | Classificação Conventional Commits (feat/fix/other) | `repoId` obrigatório e positivo |
+| `GET /insights` | Classificação Conventional Commits (feat/fix/other) + mapa de produtividade (grid 7×24: commits por dia da semana × hora do dia) | `repoId` obrigatório e positivo |
 
 **Validação aplicada:**
 - ✓ `repoId` deve ser positivo (`@Positive`)
