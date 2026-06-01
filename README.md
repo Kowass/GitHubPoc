@@ -9,6 +9,7 @@ Este é um backend Spring Boot 4.0.5 que:
 - **Persiste** em Supabase/PostgreSQL com otimizações de batch e N+1 queries
 - **Fornece 5 endpoints de métricas** calculadas sobre dados históricos (Cycle Time, Lead Time, TCM, etc.)
 - **Expõe documentação interativa** via Swagger UI (OpenAPI 3.0)
+- **Oferece modo demonstração** com dados pré-carregados de `axios/axios` e `vuejs/core`
 
 O frontend **não consome a GitHub API em runtime** — todas as métricas são calculadas sobre dados persistidos, garantindo performance e auditoria.
 
@@ -30,7 +31,11 @@ O frontend **não consome a GitHub API em runtime** — todas as métricas são 
 ```
 br.com.tcc.github_poc
 ├── client/              # GithubClient (Feign): REST + GraphQL contra api.github.com
-├── controller/          # GithubController (PoC original)
+├── controller/
+│   ├── AuthController       # Troca de code OAuth por token GitHub
+│   ├── GithubController     # Endpoints proxy para a GitHub API (repos, commits, PRs, etc.)
+│   ├── DemoController       # Endpoints de demonstração (repos pré-carregados + top contributor)
+│   └── ProductivityScoreController
 ├── etl/                 # Motor de seeding assíncrono
 │   ├── SeedController
 │   ├── SeedOrchestrator (@Async)
@@ -47,8 +52,7 @@ br.com.tcc.github_poc
 ├── entities/            # JPA entities (User, Commit, PR, Issue, Review, etc.)
 ├── repositories/        # Spring Data JPA repositories
 ├── dto/                 # DTOs de cliente/ingestão
-├── config/              # Configuração (OpenAPI, etc.)
-└── client/              # Feign clients
+└── config/              # Configuração (OpenAPI, CORS, etc.)
 ```
 
 ## Como Executar
@@ -65,14 +69,14 @@ br.com.tcc.github_poc
 Criar `.env` na raiz do projeto:
 
 ```properties
-DB_URL=jdbc:postgresql://<host>:<port>/<database>
-DB_USERNAME=<username>
+DB_URL=jdbc:postgresql://<host>:5432/postgres
+DB_USERNAME=postgres
 DB_PASSWORD=<password>
 GITHUB_CLIENT_ID=your_github_oauth_client_id
 GITHUB_CLIENT_SECRET=your_github_oauth_client_secret
-SEED_REPOS=axios/axios,owner/repo2
-SEED_SINCE=2025-05-19
 ```
+
+> O banco atualmente configurado já possui os dados de `axios/axios` e `vuejs/core` pré-carregados, habilitando o modo demonstração sem necessidade de ETL.
 
 > `GITHUB_CLIENT_ID` e `GITHUB_CLIENT_SECRET` são obrigatórios para o fluxo OAuth do frontend. Crie um OAuth App em https://github.com/settings/developers com callback `http://localhost:8080/auth-callback`.
 
@@ -90,26 +94,19 @@ A aplicação iniciará em `http://localhost:8081`.
 
 **URL:** `http://localhost:8081/swagger-ui.html`
 
-Toda a API está auto-documentada com:
-- Descrição de cada endpoint
-- Parâmetros com exemplos e validação
-- Modelos de resposta com detalhes de erros
-- Botão "Try it out" para testar
-- Respostas de erro documentadas (400, 404, 500)
-
 ### 🔌 Endpoints de Métricas
 
 **Base:** `/api/poc/metrics`
 
-Todos requerem `authorLogin` (obrigatório, `@NotBlank`) e opcionalmente `from` / `to` (ISO-8601 dates).
+Todos requerem `authorLogin` e opcionalmente `from` / `to` (ISO-8601 dates).
 
-| Endpoint | Descrição | Validação |
-|---|---|---|
-| `GET /overview` | Volume de commits/PRs, taxa de aceitação e série diária | `repoId` obrigatório e positivo |
-| `GET /flow` | Cycle Time, Lead Time, TCM, Time in Review, dias ativos | `repoId` obrigatório e positivo |
-| `GET /repos` | Participação relativa por repositório | Sem `repoId` |
-| `GET /collaboration` | Distribuição de revisões, comparativo individual vs equipe | `repoId` obrigatório e positivo |
-| `GET /insights` | Classificação Conventional Commits (feat/fix/other) + mapa de produtividade (grid 7×24: commits por dia da semana × hora do dia) | `repoId` obrigatório e positivo |
+| Endpoint | Descrição |
+|---|---|
+| `GET /overview` | Volume de commits/PRs, taxa de aceitação e série diária |
+| `GET /flow` | Cycle Time, Lead Time, TCM, Time in Review, dias ativos |
+| `GET /repos` | Participação relativa por repositório |
+| `GET /collaboration` | Distribuição de revisões, comparativo individual vs equipe |
+| `GET /insights` | Classificação Conventional Commits + mapa de produtividade (grid 7×24) |
 
 **Validação aplicada:**
 - ✓ `repoId` deve ser positivo (`@Positive`)
@@ -122,110 +119,80 @@ Todos requerem `authorLogin` (obrigatório, `@NotBlank`) e opcionalmente `from` 
 curl "http://localhost:8081/api/poc/metrics/overview?repoId=23088740&authorLogin=DigitalBrainJS&from=2025-05-19&to=2026-05-19"
 ```
 
-**Resposta de erro (exemplo):**
-```json
-{
-  "status": 404,
-  "error": "Not Found",
-  "message": "Repository not found: 999999999",
-  "path": "/api/poc/metrics/overview",
-  "timestamp": "2026-05-20T10:30:00Z"
-}
-```
-
 ### 🌱 Endpoints de ETL
 
 **Base:** `/api/poc/etl`
 
 | Endpoint | Método | Descrição |
 |---|---|---|
-| `/seed` | `POST` | Iniciar carga massiva de dados (header: `Authorization: Bearer <token>`). Body opcional `{ "repos": [...] }` sobrescreve `etl.seed.repos` |
-| `/status` | `GET` | Status do job de seed |
-
-**Exemplos:**
-
-Sem body — usa `etl.seed.repos` do config:
-```bash
-curl -X POST http://localhost:8081/api/poc/etl/seed \
-  -H "Authorization: Bearer ghp_xxxxxxxxxx"
-```
-
-Com body — sobrescreve os repos para este request:
-```bash
-curl -X POST http://localhost:8081/api/poc/etl/seed \
-  -H "Authorization: Bearer ghp_xxxxxxxxxx" \
-  -H "Content-Type: application/json" \
-  -d '{"repos": ["axios/axios", "owner/repo2"]}'
-```
-
-Status do job:
-```bash
-curl http://localhost:8081/api/poc/etl/status
-```
-
-## Testando a API
-
-### Via Swagger UI
-
-1. Abrir `http://localhost:8081/swagger-ui.html`
-2. Clicar em qualquer endpoint
-3. Clicar em "Try it out"
-4. Preencher parâmetros
-5. Clicar "Execute"
-
-### Via cURL
+| `/seed` | `POST` | Iniciar carga de dados. Body `{ "repos": ["owner/repo"] }` sobrescreve config |
+| `/status` | `GET` | Status e contadores do job em execução |
 
 ```bash
-# Obter métricas de overview (sucesso)
-curl "http://localhost:8081/api/poc/metrics/overview?repoId=23088740&authorLogin=DigitalBrainJS"
-
-# Erro: authorLogin vazio (400)
-curl "http://localhost:8081/api/poc/metrics/overview?repoId=23088740&authorLogin="
-
-# Erro: repoId não existe (404)
-curl "http://localhost:8081/api/poc/metrics/overview?repoId=999999999&authorLogin=DigitalBrainJS"
-
-# Erro: from > to (400)
-curl "http://localhost:8081/api/poc/metrics/overview?repoId=23088740&authorLogin=DigitalBrainJS&from=2026-01-01&to=2025-01-01"
-
 # Iniciar seed
 curl -X POST http://localhost:8081/api/poc/etl/seed \
-  -H "Authorization: Bearer ghp_xxxxx"
+  -H "Authorization: Bearer ghp_xxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{"repos": ["axios/axios"]}'
 
-# Status do seed
+# Consultar status
 curl http://localhost:8081/api/poc/etl/status
 ```
 
-### Via Postman
+### 🎯 Endpoints de Demonstração
 
-1. Importar `http://localhost:8081/api-docs` (OpenAPI JSON)
-2. Usar as coleções geradas automaticamente
-3. Configurar variáveis de ambiente (`repoId`, `authorLogin`, etc.)
+**Base:** `/api/poc/demo`
 
-## Repositório de Teste
+Não requerem autenticação. Retornam dados dos repositórios pré-carregados no banco.
 
-| Campo | Valor |
+| Endpoint | Método | Descrição |
+|---|---|---|
+| `/repos` | `GET` | Lista os repositórios de demonstração disponíveis (`axios` e `vuejs`) |
+| `/top-contributor` | `GET` | Retorna o `authorLogin` com mais commits nos repositórios informados |
+
+**Parâmetros de `/top-contributor`:**
+- `repoIds` (query, repetido) — IDs dos repositórios selecionados
+
+**Exemplo:**
+```bash
+# Listar repos de demo
+curl http://localhost:8081/api/poc/demo/repos
+
+# Top contributor do axios (repoId de exemplo)
+curl "http://localhost:8081/api/poc/demo/top-contributor?repoIds=23088740"
+```
+
+**Resposta de `/top-contributor`:**
+```json
+{ "login": "DigitalBrainJS" }
+```
+
+### 🔐 Endpoints de Autenticação
+
+| Endpoint | Método | Descrição |
+|---|---|---|
+| `POST /api/auth/github` | `POST` | Troca o `code` OAuth pelo token de acesso GitHub e retorna o perfil do usuário |
+
+## Banco de Dados
+
+O banco Supabase/PostgreSQL contém os dados de `axios/axios` e `vuejs/core` já populados via ETL. As tabelas principais são:
+
+| Tabela | Conteúdo |
 |---|---|
-| **Repo** | `axios/axios` |
-| **repoId** | `23088740` |
-| **Usuário de teste** | `DigitalBrainJS` |
-| **Período padrão** | `from=2025-05-19&to=2026-05-19` |
-
-## Referência de Métricas
-
-Veja [`metricas-TCC.md`](metricas-TCC.md) para especificação completa de:
-- Definição de cada métrica (Cycle Time, Lead Time, TCM, etc.)
-- Fórmulas de cálculo
-- Visualizações esperadas no dashboard
-- Edge cases e tratamento de dados vazios
+| `repositories` | Metadados dos repositórios (id = GitHub repo ID) |
+| `commits` | Commits com `author_login`, `commit_date`, `additions`, `deletions` |
+| `pull_requests` | PRs com datas de criação, merge e estado |
+| `issues` | Issues com estado e datas |
+| `reviews` | Reviews de PR com estado e autor |
+| `repository_contributors` | Participação de contribuidores por repositório |
 
 ## Arquitetura de Dados
 
 ### ETL (Motor de Seeding)
 
-1. **Extração:** GraphQL para commits (cursor-paginated + `since` nativo), REST paginado para PRs/Issues/Reviews
+1. **Extração:** GraphQL para commits (cursor-paginated), REST paginado para PRs/Issues/Reviews
 2. **Rate Limit:** `RateLimitGuard` pausa automaticamente quando `X-RateLimit-Remaining < threshold`
-3. **Persistência:** Batch pre-check (`findAllById`) + `Persistable<ID>` para evitar N+1 queries
+3. **Persistência:** Batch pre-check + `Persistable<ID>` para evitar N+1 queries
 4. **Idempotência:** Re-runs seguras — entidades duplicadas não são re-inseridas
 
 ### Cálculo de Métricas
@@ -237,12 +204,13 @@ Veja [`metricas-TCC.md`](metricas-TCC.md) para especificação completa de:
 ## Decisões Arquiteturais
 
 - ✓ **Persistência stateful:** Todos os dados em Supabase para auditoria e performance
+- ✓ **Modo demo separado:** `DemoController` isola a lógica de demonstração sem poluir endpoints de produção
 - ✓ **BatchPreCheck:** 1 SELECT em lote + N INSERTs diretos vs N SELECTs + N INSERTs
 - ✓ **GraphQL para Commits:** Mais eficiente que REST, retorna `additions`/`deletions` nativamente
 - ✓ **Spring Data Projections:** Aggregations SQL reduzem transferência de dados
-- ✓ **OpenAPI/Swagger:** Documentação auto-sincronizada com código (sem divergência)
-- ✓ **Validação em camada:** JSR-303 (`@NotBlank`, `@Positive`) + validação de negócio (`from ≤ to`, `repoId` existe)
-- ✓ **Tratamento centralizado de erros:** `@RestControllerAdvice` com `ErrorResponse` estruturado e documentado no Swagger
+- ✓ **OpenAPI/Swagger:** Documentação auto-sincronizada com código
+- ✓ **Validação em camada:** JSR-303 + validação de negócio
+- ✓ **Tratamento centralizado de erros:** `@RestControllerAdvice` com `ErrorResponse` estruturado
 
 ---
 
