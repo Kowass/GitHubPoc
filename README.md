@@ -201,6 +201,47 @@ O banco Supabase/PostgreSQL contém os dados de `axios/axios` e `vuejs/core` já
 - **Série temporal:** Preenchimento de gaps em Java (zero-fill), não em SQL
 - **Período:** Defaults a 1 ano atrás / hoje se não especificado
 
+### Score de Produtividade Individual
+
+**Endpoint:** `GET /api/productivity-score/{userId}?from=YYYY-MM-DD&to=YYYY-MM-DD`
+
+Calcula um score de 0 a 100 para um usuário com base em 5 componentes ponderados. O período padrão são os últimos 30 dias.
+
+#### Fórmula Final
+
+```
+scoreFinal = (entrega × 0.35) + (eficiência × 0.25) + (qualidade × 0.20) + (colaboração × 0.10) + (consistência × 0.10)
+```
+
+#### Componentes
+
+| Componente | Peso | Fórmula | Meta Padrão |
+|---|---|---|---|
+| **Entrega** | 35% | `(commits + PRs_merged × 3) / metaEntrega × 100` | 50 unidades |
+| **Eficiência** | 25% | `(metaCycleTime / cycleTimeMédio) × 100` | 3 dias |
+| **Qualidade** | 20% | `(PRs_merged / PRs_criados) / metaQualidade × 100` | 80% de merge rate |
+| **Colaboração** | 10% | `reviewsFeitas / metaReviews × 100` | 8 reviews |
+| **Consistência** | 10% | `diasAtivos / metaDiasAtivos × 100` | 20 dias ativos |
+
+**Observações:**
+- Um PR mergeado vale **3×** um commit no cálculo de Entrega
+- **Eficiência** é inversamente proporcional ao cycle time — PR mergeado mais rápido = score maior
+- **Dias ativos** é a contagem de dias distintos com qualquer atividade (commit, PR ou review)
+- Todos os componentes são normalizados para 0–100 antes de aplicar os pesos
+- O score final é limitado ao intervalo [0, 100]
+
+**Exemplo de resposta:**
+```json
+{
+  "scoreFinal": 72.50,
+  "entrega": 80.00,
+  "eficiencia": 66.67,
+  "qualidade": 75.00,
+  "colaboracao": 62.50,
+  "consistencia": 60.00
+}
+```
+
 ## Decisões Arquiteturais
 
 - ✓ **Persistência stateful:** Todos os dados em Supabase para auditoria e performance
