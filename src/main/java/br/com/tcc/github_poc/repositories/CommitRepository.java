@@ -185,4 +185,13 @@ public interface CommitRepository extends JpaRepository<Commit, String> {
             @Param("from") LocalDateTime from,
             @Param("to") LocalDateTime to
     );
+
+    @Query(value = """
+           SELECT author_login FROM commits
+           WHERE repo_id IN :repoIds
+           GROUP BY author_login
+           ORDER BY COUNT(*) DESC
+           LIMIT 1
+           """, nativeQuery = true)
+    String findTopContributorByRepoIds(@Param("repoIds") List<Long> repoIds);
 }
