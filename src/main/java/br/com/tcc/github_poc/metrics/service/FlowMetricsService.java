@@ -104,7 +104,9 @@ public class FlowMetricsService {
                 "commit", c.getSha(), null,
                 c.getMessageHeadline(), null,
                 c.getCommitDate() != null ? c.getCommitDate().toString() : null,
-                c.getAuthorLogin()
+                c.getAuthorLogin(),
+                c.getAdditions(),
+                c.getDeletions()
         );
     }
 
@@ -113,7 +115,9 @@ public class FlowMetricsService {
                 "pr", null, p.getNumber(),
                 p.getTitle(), p.getState(),
                 p.getCreatedAt() != null ? p.getCreatedAt().toString() : null,
-                p.getAuthorLogin()
+                p.getAuthorLogin(),
+                null,
+                null
         );
     }
 }

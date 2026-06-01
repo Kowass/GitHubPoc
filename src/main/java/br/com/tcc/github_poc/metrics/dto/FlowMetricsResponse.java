@@ -28,6 +28,8 @@ public record FlowMetricsResponse(
             String title,
             String state,
             String date,
-            String authorLogin
+            String authorLogin,
+            Integer additions,
+            Integer deletions
     ) {}
 }
