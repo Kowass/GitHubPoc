@@ -26,9 +26,9 @@ public class ProductivityScoreController {
         this.productivityScoreService = productivityScoreService;
     }
 
-    @GetMapping("/{userId}")
+    @GetMapping("/{authorLogin}")
     public ProductivityScoreResponseDTO getProductivityScore(
-            @PathVariable Integer userId,
+            @PathVariable String authorLogin,
 
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
@@ -42,8 +42,8 @@ public class ProductivityScoreController {
         LocalDateTime finalStartDate = startDate != null ? startDate : finalEndDate.minusDays(30);
 
         ProductivityMetricsProjection projection =
-                productivityScoreRepository.findProductivityMetricsByUserId(
-                        userId,
+                productivityScoreRepository.findProductivityMetricsByAuthorLogin(
+                        authorLogin,
                         finalStartDate,
                         finalEndDate
                 );
